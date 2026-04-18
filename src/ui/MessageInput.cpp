@@ -33,6 +33,11 @@ MessageInput::MessageInput(QWidget* parent) : QWidget(parent)
     m_send = new QPushButton(tr("Send"), this);
     m_send->setIcon(QIcon(QStringLiteral(":/resources/icons/send.svg")));
     m_send->setDefault(true);
+    // Stretch Send/Attach to the full height of the input row.
+    m_send->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_send->setMinimumHeight(m_edit->height());
+    m_attach->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    m_attach->setMinimumHeight(m_edit->height());
 
     lay->addWidget(m_attach);
     lay->addWidget(m_edit, 1);

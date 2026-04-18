@@ -5,10 +5,12 @@
 #include "net/FileTransferManager.h"
 #include "net/PeerManager.h"
 
+#include <QApplication>
 #include <QBrush>
 #include <QDateTime>
 #include <QFont>
 #include <QListWidgetItem>
+#include <QPalette>
 #include <algorithm>
 
 namespace nodetalk::ui {
@@ -76,12 +78,28 @@ void ChatView::appendItem(const Message& m)
     }
     auto* item = new QListWidgetItem(text, this);
     item->setData(Qt::UserRole, m.id);
+
+    // Pick bubble + text colours based on whether the active palette is dark
+    // or light, so messages stay readable on either system theme.
+    const QPalette pal = qApp->palette();
+    const bool dark = pal.color(QPalette::Window).lightness() < 128;
+    QColor bgOut, bgIn, fg;
+    if (dark) {
+        bgOut = QColor(0x2f, 0x4a, 0x6d);   // muted blue
+        bgIn  = QColor(0x33, 0x36, 0x3d);   // soft graphite
+        fg    = QColor(0xe6, 0xeb, 0xf2);   // off-white
+    } else {
+        bgOut = QColor(0xdc, 0xeb, 0xff);   // pastel blue
+        bgIn  = QColor(0xf3, 0xf3, 0xf3);   // light gray
+        fg    = QColor(0x14, 0x14, 0x14);   // near-black
+    }
+    item->setForeground(QBrush(fg));
     if (m.direction == MessageDirection::Outgoing) {
         item->setTextAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        item->setBackground(QBrush(QColor(220, 235, 255)));
+        item->setBackground(QBrush(bgOut));
     } else {
         item->setTextAlignment(Qt::AlignLeft | Qt::AlignVCenter);
-        item->setBackground(QBrush(QColor(245, 245, 245)));
+        item->setBackground(QBrush(bgIn));
     }
     if (m.kind == MessageKind::File) {
         QFont f = item->font();
