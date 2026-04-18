@@ -343,3 +343,65 @@ Goal: full feature set per PRD, polished UX, packaging, CI/CD.
   - All icons present, all dialogs sized reasonably, all dialogs
     respect tab order and keyboard navigation.
 - M: M2
+
+---
+
+## Milestone M3 — UI Polish
+
+Goal: lift the chat UI from "functional Qt Widgets" to a modern,
+themeable, accessible messenger experience.
+
+- [ ] **T-201 Bubble delegate for messages** — `ChatView` uses a custom
+  `QStyledItemDelegate` that paints message bubbles sized to their
+  content with rounded corners and a small tail. Bubbles never span
+  the full row width; long messages wrap inside the bubble at ~70%
+  of viewport width.
+- [ ] **T-202 Day separators & author grouping** _(deps: T-201)_ —
+  Messages are grouped by day with a centered separator
+  ("Today" / "Yesterday" / localized date). Consecutive messages from
+  the same author within 5 minutes share one header.
+- [ ] **T-203 Avatars / colored initials** — `PeerListWidget` and
+  `ChatView` show a circular avatar with the peer's initial(s);
+  background color is derived from a hash of `peerId`.
+- [ ] **T-204 Peer list polish** _(deps: T-203)_ — Online dot has a
+  tooltip with `last_seen` and IP. Unread message badge per peer.
+  Right-click context menu: rename alias, block, remove, copy
+  fingerprint.
+- [ ] **T-205 Status icons instead of glyph text** _(deps: T-201)_ —
+  Message status (`Sending`/`Sent`/`Delivered`/`Read`/`Failed`)
+  rendered as inline SVG icons inside the bubble; `Read` ticks
+  colored with the palette accent.
+- [ ] **T-206 Chat header bar** — Header above the chat view shows the
+  peer avatar, display name, online state and IP. Header buttons:
+  inline search (no modal), toggle Transfers dock, toggle Event log
+  dock.
+- [ ] **T-207 Clickable links in messages** _(deps: T-201)_ — URLs are
+  auto-detected and rendered as clickable links that open in the
+  default browser; text remains selectable; link color follows the
+  palette accent.
+- [ ] **T-208 Window-wide drag & drop overlay** — Dragging files
+  anywhere over the main window shows a translucent overlay
+  "Drop files to send to <peer>". Drop queues outgoing transfers; if
+  no peer is selected a hint is shown instead of silently failing.
+- [ ] **T-209 Empty states** — Empty peer list shows a centered hint
+  "Add peer by IP… (Ctrl+N)" with a button. Empty chat shows
+  "No messages yet — say hi!" with the peer avatar.
+- [ ] **T-210 Application-wide style polish** — Single QSS resource
+  (`resources/styles/nodetalk.qss`) loaded at startup; consistent
+  spacing, radius, hover states. Transfers/Event log docks hidden
+  by default, toggled via View menu.
+- [ ] **T-211 HiDPI & themed icons** — All custom icons have light +
+  dark variants picked based on the active palette; fall back to
+  `QIcon::fromTheme` where a freedesktop name exists.
+- [ ] **T-212 Smarter message input** — `MessageInput` auto-resizes
+  from 1 line up to ~5 lines, then scrolls. Character counter
+  appears near the protocol cap; over-cap input is blocked with a
+  tooltip.
+- [ ] **T-213 Tray notifications & unread badge** _(deps: T-204)_ —
+  Receiving a message in a non-active chat shows a desktop
+  notification (respecting Do-Not-Disturb). Tray icon shows a
+  dot/number badge while unread messages exist.
+- [ ] **T-214 Russian translation pass** — All M3 user-visible strings
+  are wrapped in `tr()`; `resources/i18n/nodetalk_ru.ts` updated via
+  `lupdate` and fully translated; runtime language switch still
+  works.

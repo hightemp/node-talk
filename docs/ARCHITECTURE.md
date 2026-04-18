@@ -46,9 +46,9 @@ component. Every running instance is a peer.
 | `db` | `*Repository` | CRUD for peers / messages / transfers / events. |
 | `model` | `Peer`, `Message`, `Transfer` | Plain data structs + enums. |
 | `net` | `Protocol` | Frame codec + `FrameReader`. |
-| `net` | `DiscoveryService` | UDP broadcast + multicast announce / bye. |
-| `net` | `TransportServer` | `QTcpServer` accepting incoming peers. |
-| `net` | `PeerLink` | Wraps a single TCP socket: hello handshake → ready. |
+| `net` | `DiscoveryService` | UDP broadcast + multicast announce / bye. Sends on every up, non-loopback IPv4 interface so discovery still works when a VPN owns the default route. |
+| `net` | `TransportServer` | `QTcpServer` accepting incoming peers. Pinned to `QNetworkProxy::NoProxy` so LAN traffic never goes through `HTTP_PROXY` / `HTTPS_PROXY`. |
+| `net` | `PeerLink` | Wraps a single TCP socket: hello handshake → ready. Outgoing socket is pinned to `QNetworkProxy::NoProxy`. |
 | `net` | `PeerManager` | Brain: peer cache, trust, message routing. |
 | `net` | `FileTransferManager` | Receiver-driven chunked file protocol. |
 | `ui` | `MainWindow` + widgets | Qt Widgets UI; trust prompt; tray. |
@@ -99,3 +99,21 @@ arrives it replaces the older link.
 it loads the matching `.qm` file and re-installs it; widgets respond to
 `QEvent::LanguageChange` by re-running their `retranslateUi()`. No
 restart required.
+
+## Single-instance guard
+
+`main.cpp` holds a `QLockFile` at
+`<AppLocalDataLocation>/nodetalk.lock`. A second launch of the
+executable detects the live lock, shows a `QMessageBox` warning and
+exits with status 0 instead of fighting over the discovery sockets.
+
+## Network proxy isolation
+
+LAN peer-to-peer traffic must never be routed through an HTTP proxy.
+NodeTalk explicitly calls `setProxy(QNetworkProxy::NoProxy)` on:
+
+* the listening `QTcpServer` in `TransportServer`,
+* every outbound `QTcpSocket` in `PeerLink`.
+
+This neutralises `HTTP_PROXY` / `HTTPS_PROXY` environment variables
+that Qt would otherwise honour via `QNetworkProxy::applicationProxy()`.
