@@ -31,6 +31,10 @@ TrayIcon::TrayIcon(MainWindow* mw, Settings& s, net::PeerManager& pm, QObject* p
             else { m_mw->showNormal(); m_mw->activateWindow(); }
         }
     });
+
+    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+        setVisible(true);
+    }
 }
 
 void TrayIcon::notify(const QString& title, const QString& body)

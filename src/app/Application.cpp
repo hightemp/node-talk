@@ -16,6 +16,7 @@
 #include <QApplication>
 #include <QLibraryInfo>
 #include <QLocale>
+#include <QSystemTrayIcon>
 #include <QTranslator>
 
 namespace nodetalk::app {
@@ -84,8 +85,12 @@ bool Application::initialize()
 
 void Application::show()
 {
-    if (m_window && !m_settings->startInTray()) {
+    if (!m_window) return;
+    const bool trayOk = m_tray && QSystemTrayIcon::isSystemTrayAvailable();
+    if (!m_settings->startInTray() || !trayOk) {
         m_window->show();
+        m_window->raise();
+        m_window->activateWindow();
     }
 }
 
