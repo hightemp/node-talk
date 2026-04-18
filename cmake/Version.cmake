@@ -3,7 +3,7 @@
 # Priority:
 #   1. -DNODETALK_VERSION_OVERRIDE=X.Y.Z passed on the cmake command line
 #      (used by the Makefile `release` target).
-#   2. Top-level `VERSION` file (single line: `X.Y.Z`).
+#   2. Top-level `VERSION.txt` file (single line: `X.Y.Z`).
 #   3. Latest git tag matching `vX.Y.Z` (via `git describe`).
 #   4. Fallback: 0.0.0+dev.
 
@@ -14,8 +14,8 @@ function(nodetalk_detect_version OUT_NUMERIC OUT_FULL)
     if(DEFINED NODETALK_VERSION_OVERRIDE AND NODETALK_VERSION_OVERRIDE)
         set(_version "${NODETALK_VERSION_OVERRIDE}")
         set(_full    "${NODETALK_VERSION_OVERRIDE}")
-    elseif(EXISTS "${CMAKE_SOURCE_DIR}/VERSION")
-        file(READ "${CMAKE_SOURCE_DIR}/VERSION" _file_version)
+    elseif(EXISTS "${CMAKE_SOURCE_DIR}/VERSION.txt")
+        file(READ "${CMAKE_SOURCE_DIR}/VERSION.txt" _file_version)
         string(STRIP "${_file_version}" _file_version)
         if(_file_version MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)")
             set(_version "${CMAKE_MATCH_1}.${CMAKE_MATCH_2}.${CMAKE_MATCH_3}")
