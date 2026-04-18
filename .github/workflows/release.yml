@@ -77,8 +77,11 @@ jobs:
         run: |
           choco install innosetup --no-progress -y
           $version = "${{ github.ref_name }}".TrimStart('v')
-          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=$version /DSourceDir=build\install\bin packaging\windows\nodetalk.iss
-          Move-Item Output\*.exe NodeTalk-${{ github.ref_name }}-Setup.exe
+          $src = (Resolve-Path build\install\bin).Path
+          $out = Join-Path $PWD 'installer-out'
+          New-Item -ItemType Directory -Force -Path $out | Out-Null
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=$version /DSourceDir=$src /O$out packaging\windows\nodetalk.iss
+          Move-Item (Join-Path $out '*.exe') "NodeTalk-${{ github.ref_name }}-Setup.exe"
       - uses: softprops/action-gh-release@v2
         with:
           files: |
