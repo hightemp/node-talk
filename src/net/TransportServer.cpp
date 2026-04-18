@@ -2,12 +2,14 @@
 
 #include "app/Logger.h"
 
+#include <QNetworkProxy>
 #include <QTcpSocket>
 
 namespace nodetalk::net {
 
 TransportServer::TransportServer(QObject* parent) : QObject(parent)
 {
+    m_server.setProxy(QNetworkProxy::NoProxy);
     connect(&m_server, &QTcpServer::newConnection, this, [this] {
         while (auto* s = m_server.nextPendingConnection()) {
             emit incomingSocket(s);

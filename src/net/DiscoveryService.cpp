@@ -129,6 +129,10 @@ void DiscoveryService::handleDatagram(const QByteArray& data, const QHostAddress
 
     const QString peerId = o.value(QStringLiteral("peer_id")).toString();
     if (peerId.isEmpty() || peerId == m_identity.peerId()) return;
+    // Also drop announces from our own fingerprint: identity rotation can leave
+    // the peer_id different while still being us (e.g. data dir reset).
+    const QString fp = o.value(QStringLiteral("fingerprint")).toString();
+    if (!fp.isEmpty() && fp == m_identity.fingerprint()) return;
 
     if (o.value(QStringLiteral("subtype")).toString() == QStringLiteral("bye")) {
         emit peerByeReceived(peerId);
@@ -137,7 +141,7 @@ void DiscoveryService::handleDatagram(const QByteArray& data, const QHostAddress
 
     PeerAnnouncement a;
     a.peerId      = peerId;
-    a.fingerprint = o.value(QStringLiteral("fingerprint")).toString();
+    a.fingerprint = fp;
     a.nickname    = o.value(QStringLiteral("nick")).toString();
     a.tcpPort     = static_cast<quint16>(o.value(QStringLiteral("tcp_port")).toInt());
     a.ts          = static_cast<qint64>(o.value(QStringLiteral("ts")).toDouble(QDateTime::currentSecsSinceEpoch()));

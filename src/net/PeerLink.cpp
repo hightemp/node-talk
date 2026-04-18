@@ -5,6 +5,7 @@
 
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QNetworkProxy>
 #include <QTcpSocket>
 
 namespace nodetalk::net {
@@ -41,6 +42,9 @@ PeerLink::PeerLink(const QString& localPeerId, const QString& localFingerprint,
       m_localFingerprint(localFingerprint),
       m_localNick(localNick)
 {
+    // LAN peers are always direct, never through an HTTP/SOCKS proxy that the
+    // user might have configured globally (HTTP_PROXY env, system proxy etc.).
+    m_socket->setProxy(QNetworkProxy::NoProxy);
     connect(m_socket, &QTcpSocket::connected,    this, &PeerLink::onConnected);
     connect(m_socket, &QTcpSocket::readyRead,    this, &PeerLink::onReadyRead);
     connect(m_socket, &QTcpSocket::disconnected, this, &PeerLink::onSocketDisconnected);
