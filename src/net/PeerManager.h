@@ -11,6 +11,8 @@
 #include <QString>
 #include <QTimer>
 
+class QTcpSocket;
+
 namespace nodetalk {
 class Database;
 class Identity;

@@ -2,6 +2,9 @@
 
 #include <QSystemTrayIcon>
 
+class QMenu;
+class QAction;
+
 namespace nodetalk { class Settings; }
 namespace nodetalk::net { class PeerManager; }
 
@@ -21,10 +24,10 @@ private:
     MainWindow*       m_mw;
     Settings&         m_settings;
     net::PeerManager& m_peers;
-    class QMenu*      m_menu     = nullptr;
-    class QAction*    m_actShow  = nullptr;
-    class QAction*    m_actHide  = nullptr;
-    class QAction*    m_actQuit  = nullptr;
+    QMenu*            m_menu     = nullptr;
+    QAction*          m_actShow  = nullptr;
+    QAction*          m_actHide  = nullptr;
+    QAction*          m_actQuit  = nullptr;
 };
 
 } // namespace nodetalk::ui

@@ -72,7 +72,7 @@ bool Application::initialize()
     }
 
     m_window = std::make_unique<ui::MainWindow>(*this);
-    m_tray   = std::make_unique<ui::TrayIcon>(*m_window, *m_settings);
+    m_tray   = std::make_unique<ui::TrayIcon>(m_window.get(), *m_settings, *m_peers);
 
     QObject::connect(m_settings.get(), &Settings::languageChanged,
                      this, [this](const QString& code) {

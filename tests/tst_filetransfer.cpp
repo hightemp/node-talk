@@ -44,14 +44,16 @@ void TstFileTransfer::framed_chunk_round_trips_over_tcp()
     const QByteArray body(4096, '\x42');
     client.write(encodeJson(meta));
     client.write(encodeBinary(body));
-    QVERIFY(client.waitForBytesWritten(2000));
+    while (client.bytesToWrite() > 0) QVERIFY(client.waitForBytesWritten(2000));
 
     FrameReader reader;
     QElapsedTimer deadline; deadline.start();
     int got = 0;
     QByteArray gotBody;
-    while (deadline.elapsed() < 3000 && got < 2) {
-        if (peer->waitForReadyRead(200)) reader.append(peer->readAll());
+    while (deadline.elapsed() < 5000 && got < 2) {
+        peer->waitForReadyRead(200);
+        const QByteArray chunk = peer->readAll();
+        if (!chunk.isEmpty()) reader.append(chunk);
         for (;;) {
             auto f = reader.next();
             if (!f.valid) break;

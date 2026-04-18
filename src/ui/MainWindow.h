@@ -2,6 +2,11 @@
 
 #include <QMainWindow>
 
+class QAction;
+class QLabel;
+class QMenu;
+
+namespace nodetalk { struct Transfer; }
 namespace nodetalk::app { class Application; }
 namespace nodetalk::net { class FileTransferManager; class PeerManager; }
 namespace nodetalk::ui {
@@ -33,7 +38,7 @@ private slots:
     void onAttachClicked();
     void onSendText(const QString& text);
     void onTrustPrompt(const QString& peerId);
-    void onIncomingOffer(const struct Transfer& t);
+    void onIncomingOffer(const ::nodetalk::Transfer& t);
     void onAbout();
 
 private:
@@ -51,12 +56,12 @@ private:
     TransferWidget* m_xferPanel = nullptr;
     EventLogWidget* m_logPanel  = nullptr;
 
-    class QAction *m_actAdd = nullptr, *m_actSettings = nullptr,
-                  *m_actQuit = nullptr, *m_actAbout = nullptr,
-                  *m_actSearch = nullptr;
-    class QMenu   *m_menuFile = nullptr, *m_menuPeers = nullptr,
-                  *m_menuView = nullptr, *m_menuHelp = nullptr;
-    class QLabel  *m_typing = nullptr;
+    QAction *m_actAdd = nullptr, *m_actSettings = nullptr,
+            *m_actQuit = nullptr, *m_actAbout = nullptr,
+            *m_actSearch = nullptr;
+    QMenu   *m_menuFile = nullptr, *m_menuPeers = nullptr,
+            *m_menuView = nullptr, *m_menuHelp = nullptr;
+    QLabel  *m_typing = nullptr;
 
     QString m_currentPeer;
 };

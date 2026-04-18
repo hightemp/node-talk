@@ -58,8 +58,6 @@ configure_file(
 # Core library (so that tests can link against it)
 # ---------------------------------------------------------------------------
 set(NODETALK_LIB_SOURCES
-    src/app/Application.cpp
-    src/app/Application.h
     src/app/Paths.cpp
     src/app/Paths.h
     src/app/Logger.cpp
@@ -128,6 +126,8 @@ endif()
 # UI sources (kept separate so headless tests can avoid it)
 # ---------------------------------------------------------------------------
 set(NODETALK_UI_SOURCES
+    src/app/Application.cpp
+    src/app/Application.h
     src/ui/MainWindow.cpp
     src/ui/MainWindow.h
     src/ui/PeerListModel.cpp

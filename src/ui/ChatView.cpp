@@ -103,10 +103,8 @@ void ChatView::onMessageStatusChanged(const QString& msgId, MessageStatus s)
         auto* it = item(i);
         if (it->data(Qt::UserRole).toString() == msgId) {
             QString t = it->text();
-            // crude: re-render the trailing glyph
-            const int sep = t.lastIndexOf(QChar(' '));
-            Q_UNUSED(sep);
-            it->setText(t.section(QChar(' '), 0, -2) + QChar(' ') + statusGlyph(s));
+            it->setText(t.section(QLatin1Char(' '), 0, -2)
+                        + QLatin1Char(' ') + statusGlyph(s));
             break;
         }
     }

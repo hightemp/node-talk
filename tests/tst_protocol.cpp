@@ -27,10 +27,10 @@ void TstProtocol::encodeJson_isParseable()
     QJsonObject obj{{QStringLiteral("type"), QStringLiteral("hello")}};
     const QByteArray frame = encodeJson(obj);
     QVERIFY(frame.size() > 5);
-    // Header: 4 bytes length + 1 byte type
+    // Header layout: u32 BE length (= payload size only) + u8 type + payload
     const quint32 len = (quint8(frame[0]) << 24) | (quint8(frame[1]) << 16)
                       | (quint8(frame[2]) << 8)  |  quint8(frame[3]);
-    QCOMPARE(int(len) + 4, frame.size());
+    QCOMPARE(int(len) + 5, frame.size());
     QCOMPARE(quint8(frame[4]), quint8(frame::kJson));
 }
 

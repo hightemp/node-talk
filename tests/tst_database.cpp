@@ -70,6 +70,7 @@ void TstDatabase::messages_insert_and_page()
     Peer p;
     p.id = QStringLiteral("peer-1");
     p.fingerprint = QStringLiteral("fp");
+    p.nickname = QStringLiteral("alice");
     QVERIFY(pr.upsert(p));
 
     const qint64 now = QDateTime::currentSecsSinceEpoch();
@@ -103,6 +104,7 @@ void TstDatabase::transfers_round_trip()
     Peer p;
     p.id = QStringLiteral("peer-x");
     p.fingerprint = QStringLiteral("fp");
+    p.nickname = QStringLiteral("x");
     QVERIFY(pr.upsert(p));
 
     Transfer t;
@@ -114,9 +116,10 @@ void TstDatabase::transfers_round_trip()
     t.fileSize = 1024;
     t.bytesDone = 0;
     t.sha256 = QStringLiteral("dead");
+    t.localPath = QStringLiteral("/tmp/a.bin");
     QVERIFY(tr.upsert(t));
 
-    QVERIFY(tr.updateProgress(t.id, 256));
+    QVERIFY(tr.updateProgress(t.id, 256, TransferState::Active));
     QVERIFY(tr.updateState(t.id, TransferState::Active));
     auto loaded = tr.findById(t.id);
     QVERIFY(loaded.has_value());
