@@ -154,10 +154,42 @@ void DiscoveryService::send(const QByteArray& body)
     const QHostAddress mgrp(m_settings.multicastGroup());
 
     if (m_broadcast) {
+        // Send a generic 255.255.255.255 (kernel picks default route) and
+        // additionally an explicit broadcast on every up IPv4 interface so
+        // that VPN/docker interfaces don't hijack the only delivery.
         m_broadcast->writeDatagram(body, QHostAddress::Broadcast, dport);
+        const auto ifaces = QNetworkInterface::allInterfaces();
+        for (const auto& ifc : ifaces) {
+            const auto flags = ifc.flags();
+            if (!(flags & QNetworkInterface::IsUp)) continue;
+            if (!(flags & QNetworkInterface::IsRunning)) continue;
+            if (flags & QNetworkInterface::IsLoopBack) continue;
+            if (!(flags & QNetworkInterface::CanBroadcast)) continue;
+            for (const auto& ae : ifc.addressEntries()) {
+                const QHostAddress bc = ae.broadcast();
+                if (bc.isNull()) continue;
+                if (ae.ip().protocol() != QAbstractSocket::IPv4Protocol) continue;
+                m_broadcast->writeDatagram(body, bc, dport);
+            }
+        }
     }
     if (m_multicast) {
         m_multicast->writeDatagram(body, mgrp, mport);
+        const auto ifaces = QNetworkInterface::allInterfaces();
+        for (const auto& ifc : ifaces) {
+            const auto flags = ifc.flags();
+            if (!(flags & QNetworkInterface::IsUp)) continue;
+            if (!(flags & QNetworkInterface::IsRunning)) continue;
+            if (flags & QNetworkInterface::IsLoopBack) continue;
+            if (!(flags & QNetworkInterface::CanMulticast)) continue;
+            bool hasV4 = false;
+            for (const auto& ae : ifc.addressEntries()) {
+                if (ae.ip().protocol() == QAbstractSocket::IPv4Protocol) { hasV4 = true; break; }
+            }
+            if (!hasV4) continue;
+            m_multicast->setMulticastInterface(ifc);
+            m_multicast->writeDatagram(body, mgrp, mport);
+        }
     }
 }
 
