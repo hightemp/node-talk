@@ -44,6 +44,13 @@ TransferWidget::TransferWidget(net::FileTransferManager& xfer, QWidget* parent)
             this, &TransferWidget::onUpdated);
     connect(&m_xfer, &net::FileTransferManager::incomingOffer,
             this, &TransferWidget::onAdded);
+
+    // Populate history so completed transfers from previous sessions are
+    // visible (they are persisted in the SQLite `transfers` table).
+    const auto recent = m_xfer.recentTransfers(200);
+    for (auto it = recent.crbegin(); it != recent.crend(); ++it) {
+        addOrUpdate(*it);
+    }
 }
 
 QString TransferWidget::stateText(TransferState s) const

@@ -131,4 +131,18 @@ QList<Transfer> TransferRepository::active() const
     return out;
 }
 
+QList<Transfer> TransferRepository::recent(int limit) const
+{
+    QList<Transfer> out;
+    QSqlQuery q(m_db.handle());
+    q.prepare(QStringLiteral(
+        "SELECT id,msg_id,peer_id,direction,file_name,file_size,mime,sha256,"
+        "       local_path,bytes_done,state,started_at,finished_at "
+        "FROM transfers ORDER BY COALESCE(finished_at, started_at) DESC LIMIT :n"));
+    q.bindValue(QStringLiteral(":n"), limit);
+    if (!q.exec()) return out;
+    while (q.next()) out.push_back(fromRow(q));
+    return out;
+}
+
 } // namespace nodetalk

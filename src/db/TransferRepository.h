@@ -21,6 +21,7 @@ public:
     std::optional<Transfer> findById(const QString& id) const;
     QList<Transfer>         forPeer(const QString& peerId) const;
     QList<Transfer>         active() const;
+    QList<Transfer>         recent(int limit = 200) const;
 
 private:
     Database& m_db;

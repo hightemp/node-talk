@@ -239,6 +239,11 @@ QList<Transfer> FileTransferManager::activeTransfers() const
     return out;
 }
 
+QList<Transfer> FileTransferManager::recentTransfers(int limit) const
+{
+    return m_repo.recent(limit);
+}
+
 void FileTransferManager::onPeerJson(const QString& peerId, const QJsonObject& obj)
 {
     const QString type = obj.value(QStringLiteral("type")).toString();

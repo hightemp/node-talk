@@ -53,6 +53,7 @@ public:
     void cancel(const QString& xferId);
 
     QList<Transfer> activeTransfers() const;
+    QList<Transfer> recentTransfers(int limit = 200) const;
 
 signals:
     void transferAdded(const Transfer& t);
