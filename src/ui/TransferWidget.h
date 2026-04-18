@@ -20,10 +20,12 @@ public:
 private slots:
     void onAdded(const Transfer& t);
     void onUpdated(const Transfer& t);
+    void onContextMenu(const QPoint& pos);
 
 private:
     void addOrUpdate(const Transfer& t);
     QString stateText(TransferState s) const;
+    static QString humanSize(qint64 bytes);
 
     net::FileTransferManager& m_xfer;
     QHash<QString, QTreeWidgetItem*> m_items;
