@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=NodeTalk
+GenericName=LAN Messenger
+Comment=Serverless peer-to-peer LAN messenger
+Exec=NodeTalk
+Icon=nodetalk
+Terminal=false
+Categories=Network;InstantMessaging;Qt;
+StartupNotify=true
+Keywords=chat;messenger;lan;p2p;

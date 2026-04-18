@@ -1,0 +1,10 @@
+#pragma once
+
+namespace nodetalk {
+constexpr const char* kAppName        = "NodeTalk";
+constexpr const char* kAppOrg         = "NodeTalk";
+constexpr const char* kAppDomain      = "nodetalk.org";
+constexpr const char* kAppVersion     = "@PROJECT_VERSION@";
+constexpr const char* kAppVersionFull = "@NODETALK_VERSION_FULL@";
+constexpr int         kProtocolVersion = 1;
+}

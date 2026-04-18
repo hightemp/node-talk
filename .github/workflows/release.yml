@@ -1,0 +1,115 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.2'
+          host: linux
+          target: desktop
+          arch: linux_gcc_64
+          cache: true
+      - name: Install build deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 \
+            libxcb-cursor0 file fuse libfuse2 wget
+          wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+          wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+          chmod +x linuxdeploy-*.AppImage
+          sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
+          sudo mv linuxdeploy-plugin-qt-x86_64.AppImage /usr/local/bin/linuxdeploy-plugin-qt
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
+          cmake --build build --parallel
+      - name: Package tar.gz + deb
+        working-directory: build
+        run: cpack -G "TGZ;DEB"
+      - name: AppImage
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: bash packaging/linux/AppImage.sh
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/NodeTalk-*.tar.gz
+            build/NodeTalk-*.deb
+            NodeTalk-*-x86_64.AppImage
+          generate_release_notes: true
+
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.2'
+          host: windows
+          target: desktop
+          arch: win64_msvc2019_64
+          cache: true
+      - name: Build
+        shell: pwsh
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
+          cmake --build build --config Release --parallel
+          cmake --install build --prefix build/install --config Release
+          windeployqt --release --no-translations build/install/bin/NodeTalk.exe
+      - name: Zip
+        shell: pwsh
+        run: Compress-Archive -Path build/install/bin/* -DestinationPath NodeTalk-${{ github.ref_name }}-win64.zip
+      - name: Installer
+        shell: pwsh
+        run: |
+          choco install innosetup --no-progress -y
+          $version = "${{ github.ref_name }}".TrimStart('v')
+          & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=$version /DSourceDir=build\install\bin packaging\windows\nodetalk.iss
+          Move-Item Output\*.exe NodeTalk-${{ github.ref_name }}-Setup.exe
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            NodeTalk-*-win64.zip
+            NodeTalk-*-Setup.exe
+          generate_release_notes: true
+
+  macos:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: jurplel/install-qt-action@v4
+        with:
+          version: '6.7.2'
+          host: mac
+          target: desktop
+          arch: clang_64
+          cache: true
+      - name: Build
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
+          cmake --build build --parallel
+          macdeployqt build/NodeTalk.app -dmg
+      - name: Zip .app
+        run: |
+          ditto -c -k --keepParent build/NodeTalk.app NodeTalk-${{ github.ref_name }}-macos.zip
+          mv build/NodeTalk.dmg NodeTalk-${{ github.ref_name }}.dmg
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            NodeTalk-*-macos.zip
+            NodeTalk-*.dmg
+          generate_release_notes: true

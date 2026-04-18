@@ -1,0 +1,46 @@
+# Build artifacts
+build/
+build-*/
+out/
+cmake-build-*/
+*.user
+*.user.*
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+Testing/
+CTestTestfile.cmake
+DartConfiguration.tcl
+Makefile
+
+# Generated
+*.qm
+src/Version.h
+src/app/Version.h
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Packaging
+*.AppImage
+*.deb
+*.dmg
+*.zip
+*.tar.gz
+packaging/_work/
+
+# Logs and runtime
+*.log
+*.sqlite
+*.sqlite-journal
+
+# Misc
+compile_commands.json
+.cache/
