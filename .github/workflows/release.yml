@@ -68,7 +68,19 @@ jobs:
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
           cmake --build build --config Release --parallel
           cmake --install build --prefix build/install --config Release
-          windeployqt --release --no-translations build/install/bin/NodeTalk.exe
+          windeployqt --release --no-translations --compiler-runtime build/install/bin/NodeTalk.exe
+      - name: Bundle MSVC runtime DLLs
+        shell: pwsh
+        run: |
+          $redist = $env:VCToolsRedistDir
+          if (-not $redist) {
+            $vsBase = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Redist\MSVC"
+            $redist = (Get-ChildItem $vsBase -Directory | Sort-Object Name -Descending | Select-Object -First 1).FullName
+          }
+          $crt = Join-Path $redist 'x64'
+          $crtDir = Get-ChildItem $crt -Directory -Filter 'Microsoft.VC*.CRT' | Select-Object -First 1
+          Copy-Item (Join-Path $crtDir.FullName '*.dll') build/install/bin/ -Force
+          Get-ChildItem build/install/bin/ -Filter '*.dll' | Where-Object { $_.Name -like 'vcruntime*' -or $_.Name -like 'msvcp*' -or $_.Name -like 'concrt*' } | Select-Object Name
       - name: Zip
         shell: pwsh
         run: Compress-Archive -Path build/install/bin/* -DestinationPath NodeTalk-${{ github.ref_name }}-win64.zip
