@@ -25,6 +25,15 @@ cp resources/icons/nodetalk.svg     "$APPDIR/nodetalk.svg"
 export QMAKE
 export OUTPUT="NodeTalk-${VERSION}-x86_64.AppImage"
 
+# Restrict Qt SQL drivers to sqlite (avoid libqsqlmimer.so needing libmimerapi.so, etc.).
+export EXTRA_QT_PLUGINS="${EXTRA_QT_PLUGINS:-}"
+export EXCLUDE_LIBS="${EXCLUDE_LIBS:-}"
+QT_PLUGIN_DIR="$(dirname "$QMAKE")/../plugins"
+if [[ -d "$QT_PLUGIN_DIR/sqldrivers" ]]; then
+    find "$QT_PLUGIN_DIR/sqldrivers" -maxdepth 1 -type f \
+        ! -name 'libqsqlite.so' -delete || true
+fi
+
 linuxdeploy \
     --appdir "$APPDIR" \
     --plugin qt \
