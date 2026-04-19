@@ -313,7 +313,12 @@ void PeerManager::onLinkReady(PeerLink* link)
     setOnline(rid, true);
 
     if (it->trust == TrustState::Unknown) {
-        emit trustPromptRequested(*it);
+        // Defer to the next event-loop tick so the modal trust dialog is
+        // not opened while we are still nested inside socket / link
+        // signal handlers (re-entrant exec() loops have crashed before).
+        const Peer snap = *it;
+        QMetaObject::invokeMethod(this, [this, snap]{ emit trustPromptRequested(snap); },
+                                  Qt::QueuedConnection);
     }
 }
 

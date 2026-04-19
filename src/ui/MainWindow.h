@@ -1,6 +1,8 @@
 #pragma once
 
 #include <QMainWindow>
+#include <QQueue>
+#include <QSet>
 
 class QAction;
 class QLabel;
@@ -69,6 +71,16 @@ private:
     QLineEdit* m_searchBar = nullptr;
 
     QString m_currentPeer;
+
+    // Serialised trust-prompt queue: only one TrustDialog is visible at a
+    // time; duplicate requests for the same peer are coalesced. Without
+    // this, fast back-to-back link reconnects open nested modal dialogs
+    // and re-entrant exec() loops crash on accept.
+    QQueue<QString> m_trustQueue;
+    QSet<QString>   m_trustQueued;
+    bool            m_trustPromptActive = false;
+    void enqueueTrustPrompt(const QString& peerId);
+    void processNextTrustPrompt();
 };
 
 } // namespace nodetalk::ui

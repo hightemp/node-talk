@@ -164,7 +164,7 @@ void MainWindow::wireSignals()
     });
 
     connect(&m_app.peers(), &net::PeerManager::trustPromptRequested,
-            this, [this](const Peer& p){ onTrustPrompt(p.id); });
+            this, [this](const Peer& p){ enqueueTrustPrompt(p.id); });
 
     connect(&m_app.peers(), &net::PeerManager::typingChanged,
             this, [this](const QString& peerId, bool active){
@@ -232,13 +232,42 @@ void MainWindow::onSendText(const QString& text)
     m_app.peers().sendText(m_currentPeer, text);
 }
 
+void MainWindow::enqueueTrustPrompt(const QString& peerId)
+{
+    if (peerId.isEmpty()) return;
+    if (m_trustQueued.contains(peerId)) return;          // dedupe
+    if (auto p = m_app.peers().findPeer(peerId); !p || p->trust != TrustState::Unknown)
+        return;                                          // already decided
+    m_trustQueued.insert(peerId);
+    m_trustQueue.enqueue(peerId);
+    if (!m_trustPromptActive)
+        QMetaObject::invokeMethod(this, &MainWindow::processNextTrustPrompt,
+                                  Qt::QueuedConnection);
+}
+
+void MainWindow::processNextTrustPrompt()
+{
+    if (m_trustPromptActive) return;
+    if (m_trustQueue.isEmpty()) return;
+    const QString peerId = m_trustQueue.dequeue();
+    m_trustQueued.remove(peerId);
+    m_trustPromptActive = true;
+    onTrustPrompt(peerId);
+    m_trustPromptActive = false;
+    if (!m_trustQueue.isEmpty())
+        QMetaObject::invokeMethod(this, &MainWindow::processNextTrustPrompt,
+                                  Qt::QueuedConnection);
+}
+
 void MainWindow::onTrustPrompt(const QString& peerId)
 {
     auto pOpt = m_app.peers().findPeer(peerId);
     if (!pOpt) return;
+    if (pOpt->trust != TrustState::Unknown) return;   // already decided
     TrustDialog dlg(*pOpt, this);
-    if (dlg.exec() == QDialog::Accepted) m_app.peers().trust(peerId);
-    else                                  m_app.peers().block(peerId);
+    const int rc = dlg.exec();
+    if (rc == QDialog::Accepted) m_app.peers().trust(peerId);
+    else                          m_app.peers().block(peerId);
 }
 
 void MainWindow::onIncomingOffer(const Transfer& t)

@@ -8,8 +8,30 @@
 #include <QLockFile>
 #include <QMessageBox>
 
+#ifdef Q_OS_UNIX
+#include <csignal>
+#include <cstdio>
+#include <cstdlib>
+#include <execinfo.h>
+#include <unistd.h>
+static void nodetalk_crash_handler(int sig) {
+    void* frames[64];
+    int n = backtrace(frames, 64);
+    fprintf(stderr, "\n=== NodeTalk crash: signal %d ===\n", sig);
+    backtrace_symbols_fd(frames, n, STDERR_FILENO);
+    fflush(stderr);
+    signal(sig, SIG_DFL);
+    raise(sig);
+}
+#endif
+
 int main(int argc, char* argv[])
 {
+#ifdef Q_OS_UNIX
+    signal(SIGSEGV, nodetalk_crash_handler);
+    signal(SIGABRT, nodetalk_crash_handler);
+    signal(SIGBUS,  nodetalk_crash_handler);
+#endif
     QApplication::setApplicationName(QString::fromLatin1(nodetalk::kAppName));
     QApplication::setOrganizationName(QString::fromLatin1(nodetalk::kAppOrg));
     QApplication::setOrganizationDomain(QString::fromLatin1(nodetalk::kAppDomain));
