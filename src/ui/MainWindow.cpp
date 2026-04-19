@@ -24,10 +24,13 @@
 #include <QDockWidget>
 #include <QFileDialog>
 #include <QInputDialog>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QLineEdit>
 #include <QMenu>
 #include <QMenuBar>
 #include <QMessageBox>
+#include <QShortcut>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QToolBar>
@@ -64,9 +67,15 @@ void MainWindow::buildLayout()
     m_typing = new QLabel(this);
     m_typing->setStyleSheet(QStringLiteral("color: gray;"));
 
+    m_searchBar = new QLineEdit(this);
+    m_searchBar->setPlaceholderText(tr("Search in chat… (Esc to clear)"));
+    m_searchBar->setClearButtonEnabled(true);
+    m_searchBar->hide();
+
     auto* right = new QWidget(this);
     auto* rlay = new QVBoxLayout(right);
     rlay->setContentsMargins(0, 0, 0, 0);
+    rlay->addWidget(m_searchBar);
     rlay->addWidget(m_typing);
     rlay->addWidget(m_chat, 1);
     rlay->addWidget(m_input);
@@ -114,10 +123,9 @@ void MainWindow::buildActions()
     m_actSearch = new QAction(tr("Search in chat…"), this);
     m_actSearch->setShortcut(QKeySequence::Find);
     connect(m_actSearch, &QAction::triggered, this, [this]{
-        bool ok = false;
-        const QString q = QInputDialog::getText(this, tr("Search"), tr("Search:"),
-                                                QLineEdit::Normal, {}, &ok);
-        if (ok) m_chat->setSearchFilter(q);
+        m_searchBar->show();
+        m_searchBar->setFocus();
+        m_searchBar->selectAll();
     });
 }
 
@@ -171,6 +179,18 @@ void MainWindow::wireSignals()
 
     connect(&m_app.transfers(), &net::FileTransferManager::incomingOffer,
             this, &MainWindow::onIncomingOffer);
+
+    // Inline search bar -> live filter; Esc closes and clears.
+    connect(m_searchBar, &QLineEdit::textChanged, this, [this](const QString& q){
+        m_chat->setSearchFilter(q);
+    });
+    auto* escClose = new QShortcut(QKeySequence(Qt::Key_Escape), m_searchBar);
+    escClose->setContext(Qt::WidgetShortcut);
+    connect(escClose, &QShortcut::activated, this, [this]{
+        m_searchBar->clear();   // triggers textChanged("") -> filter cleared
+        m_searchBar->hide();
+        m_chat->setFocus();
+    });
 }
 
 void MainWindow::onPeerSelected(const QString& peerId)

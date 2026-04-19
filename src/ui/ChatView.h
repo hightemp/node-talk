@@ -30,6 +30,14 @@ public slots:
     void onMessageAppended(const Message& m);
     void onMessageStatusChanged(const QString& msgId, MessageStatus s);
 
+private slots:
+    void onContextMenu(const QPoint& pos);
+    void copySelectionPlain();
+    void copySelectionFull();
+
+protected:
+    void keyPressEvent(QKeyEvent* e) override;
+
 private:
     void appendItem(const Message& m);
     QString statusGlyph(MessageStatus s) const;

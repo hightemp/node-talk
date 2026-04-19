@@ -2,6 +2,8 @@
 
 #include "MainWindow.h"
 #include "core/Settings.h"
+#include "model/Message.h"
+#include "model/Peer.h"
 #include "net/PeerManager.h"
 
 #include <QAction>
@@ -35,6 +37,27 @@ TrayIcon::TrayIcon(MainWindow* mw, Settings& s, net::PeerManager& pm, QObject* p
     if (QSystemTrayIcon::isSystemTrayAvailable()) {
         setVisible(true);
     }
+
+    // Desktop notification on every incoming chat message that the user
+    // is unlikely to see (window not active, or another conversation open).
+    connect(&m_peers, &net::PeerManager::messageAppended,
+            this, [this](const Message& m) {
+        if (m.direction != MessageDirection::Incoming) return;
+        const bool windowActive = m_mw && m_mw->isActiveWindow()
+                                  && !m_mw->isMinimized() && m_mw->isVisible();
+        const bool sameChatOpen = m_mw && m_mw->currentPeer() == m.peerId;
+        if (windowActive && sameChatOpen) return;
+
+        QString title = tr("New message");
+        if (auto p = m_peers.findPeer(m.peerId)) {
+            title = p->shownName();
+        }
+        QString body = (m.kind == MessageKind::File)
+                       ? tr("\xF0\x9F\x93\x8E File: %1").arg(m.body)
+                       : m.body;
+        if (body.size() > 240) body = body.left(240) + QStringLiteral("\xE2\x80\xA6");
+        notify(title, body);
+    });
 }
 
 void TrayIcon::notify(const QString& title, const QString& body)

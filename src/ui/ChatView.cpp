@@ -7,9 +7,12 @@
 
 #include <QApplication>
 #include <QBrush>
+#include <QClipboard>
 #include <QDateTime>
 #include <QFont>
+#include <QKeyEvent>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QPalette>
 #include <algorithm>
 
@@ -21,10 +24,13 @@ ChatView::ChatView(Database& db, net::PeerManager& pm,
 {
     setUniformItemSizes(false);
     setWordWrap(true);
-    setSelectionMode(QAbstractItemView::NoSelection);
+    setSelectionMode(QAbstractItemView::ExtendedSelection);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setSpacing(4);
     setStyleSheet(QStringLiteral("QListWidget::item { padding: 6px 8px; }"));
+    setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(this, &QWidget::customContextMenuRequested,
+            this, &ChatView::onContextMenu);
 
     connect(&m_pm, &net::PeerManager::messageAppended,
             this, &ChatView::onMessageAppended);
@@ -49,7 +55,7 @@ void ChatView::setSearchFilter(const QString& query)
 {
     m_filter = query;
     setPeer(m_peerId);
-    if (query.isEmpty()) return;
+    if (query.isEmpty()) return;   // setPeer reload already shows everything
     for (int i = 0; i < count(); ++i) {
         item(i)->setHidden(!item(i)->text().contains(query, Qt::CaseInsensitive));
     }
@@ -78,6 +84,7 @@ void ChatView::appendItem(const Message& m)
     }
     auto* item = new QListWidgetItem(text, this);
     item->setData(Qt::UserRole, m.id);
+    item->setData(Qt::UserRole + 1, m.body); // raw body for clean Copy
 
     // Pick bubble + text colours based on whether the active palette is dark
     // or light, so messages stay readable on either system theme.
@@ -126,6 +133,74 @@ void ChatView::onMessageStatusChanged(const QString& msgId, MessageStatus s)
             break;
         }
     }
+}
+
+void ChatView::keyPressEvent(QKeyEvent* e)
+{
+    if (e->matches(QKeySequence::Copy)) {
+        copySelectionPlain();
+        e->accept();
+        return;
+    }
+    if (e->matches(QKeySequence::SelectAll)) {
+        selectAll();
+        e->accept();
+        return;
+    }
+    QListWidget::keyPressEvent(e);
+}
+
+void ChatView::copySelectionPlain()
+{
+    const auto items = selectedItems();
+    if (items.isEmpty()) return;
+    QStringList parts;
+    parts.reserve(items.size());
+    for (auto* it : items) {
+        const QString body = it->data(Qt::UserRole + 1).toString();
+        parts << (body.isEmpty() ? it->text() : body);
+    }
+    QApplication::clipboard()->setText(parts.join(QLatin1Char('\n')));
+}
+
+void ChatView::copySelectionFull()
+{
+    const auto items = selectedItems();
+    if (items.isEmpty()) return;
+    QStringList parts;
+    parts.reserve(items.size());
+    for (auto* it : items) parts << it->text();
+    QApplication::clipboard()->setText(parts.join(QLatin1Char('\n')));
+}
+
+void ChatView::onContextMenu(const QPoint& pos)
+{
+    QListWidgetItem* it = itemAt(pos);
+    if (it && !it->isSelected()) {
+        clearSelection();
+        it->setSelected(true);
+    }
+    const bool hasSel = !selectedItems().isEmpty();
+
+    QMenu menu(this);
+    QAction* actCopy = menu.addAction(tr("Copy text"));
+    actCopy->setShortcut(QKeySequence::Copy);
+    actCopy->setEnabled(hasSel);
+
+    QAction* actCopyFull = menu.addAction(tr("Copy with timestamp"));
+    actCopyFull->setEnabled(hasSel);
+
+    menu.addSeparator();
+    QAction* actSelectAll = menu.addAction(tr("Select all"));
+    actSelectAll->setShortcut(QKeySequence::SelectAll);
+    QAction* actClearSel = menu.addAction(tr("Clear selection"));
+    actClearSel->setEnabled(hasSel);
+
+    QAction* chosen = menu.exec(viewport()->mapToGlobal(pos));
+    if (chosen == actCopy)        copySelectionPlain();
+    else if (chosen == actCopyFull) copySelectionFull();
+    else if (chosen == actSelectAll) selectAll();
+    else if (chosen == actClearSel)  clearSelection();
 }
 
 } // namespace nodetalk::ui

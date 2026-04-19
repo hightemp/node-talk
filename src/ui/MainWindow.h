@@ -4,6 +4,7 @@
 
 class QAction;
 class QLabel;
+class QLineEdit;
 class QMenu;
 
 namespace nodetalk { struct Transfer; }
@@ -26,6 +27,9 @@ public:
 
     /// Re-applies user-visible strings (menu/labels/titles).
     void retranslateUi();
+
+    /// The peer whose conversation is currently displayed (may be empty).
+    QString currentPeer() const { return m_currentPeer; }
 
 protected:
     void changeEvent(QEvent* e)  override;
@@ -62,6 +66,7 @@ private:
     QMenu   *m_menuFile = nullptr, *m_menuPeers = nullptr,
             *m_menuView = nullptr, *m_menuHelp = nullptr;
     QLabel  *m_typing = nullptr;
+    QLineEdit* m_searchBar = nullptr;
 
     QString m_currentPeer;
 };
