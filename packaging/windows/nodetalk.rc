@@ -1,0 +1,49 @@
+// Windows resource file for NodeTalk.
+// Embeds the application icon (used by Explorer, taskbar, alt-tab thumbnails)
+// plus a VERSIONINFO block so right-click → Properties → Details shows the
+// product/version metadata.
+//
+// `NODETALK_VERSION_RC` (numeric, "MAJOR,MINOR,PATCH,0") and
+// `NODETALK_VERSION_STR` (display "MAJOR.MINOR.PATCH") are defined by CMake.
+
+#include <windows.h>
+
+#ifndef NODETALK_VERSION_RC
+#  define NODETALK_VERSION_RC 0,0,0,0
+#endif
+#ifndef NODETALK_VERSION_STR
+#  define NODETALK_VERSION_STR "0.0.0"
+#endif
+
+// IDI_ICON1 is the conventional first numeric id; Explorer picks the
+// numerically-lowest icon resource as the executable icon.
+IDI_ICON1 ICON "nodetalk.ico"
+
+VS_VERSION_INFO VERSIONINFO
+ FILEVERSION    NODETALK_VERSION_RC
+ PRODUCTVERSION NODETALK_VERSION_RC
+ FILEFLAGSMASK  0x3fL
+ FILEFLAGS      0x0L
+ FILEOS         VOS_NT_WINDOWS32
+ FILETYPE       VFT_APP
+ FILESUBTYPE    VFT2_UNKNOWN
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904b0"
+        BEGIN
+            VALUE "CompanyName",      "NodeTalk Project"
+            VALUE "FileDescription",  "NodeTalk \u2014 LAN messenger"
+            VALUE "FileVersion",      NODETALK_VERSION_STR
+            VALUE "InternalName",     "NodeTalk"
+            VALUE "LegalCopyright",   "MIT License"
+            VALUE "OriginalFilename", "NodeTalk.exe"
+            VALUE "ProductName",      "NodeTalk"
+            VALUE "ProductVersion",   NODETALK_VERSION_STR
+        END
+    END
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x0409, 0x04b0
+    END
+END

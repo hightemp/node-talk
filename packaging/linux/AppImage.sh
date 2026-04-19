@@ -21,6 +21,10 @@ cmake --install "$BUILD_DIR" --prefix "$APPDIR/usr"
 # Desktop file + icon (linuxdeploy expects them at the root of AppDir).
 cp packaging/linux/nodetalk.desktop "$APPDIR/"
 cp resources/icons/nodetalk.svg     "$APPDIR/nodetalk.svg"
+# 256px PNG fallback so file managers without librsvg still get an icon.
+if [[ -f resources/icons/png/nodetalk-256.png ]]; then
+    cp resources/icons/png/nodetalk-256.png "$APPDIR/nodetalk.png"
+fi
 
 export QMAKE
 export OUTPUT="NodeTalk-${VERSION}-x86_64.AppImage"

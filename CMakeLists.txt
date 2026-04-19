@@ -174,6 +174,26 @@ qt_add_translations(nodetalk_core
 qt_add_executable(nodetalk
     src/main.cpp
 )
+
+# Platform icon assets.
+#  * Windows: a .rc references a multi-size .ico and embeds VERSIONINFO.
+#  * macOS:   a multi-size .icns is bundled and referenced from Info.plist.
+#  * Linux:   PNG hicolor icons are installed below.
+if(WIN32)
+    # Pass the version into the .rc preprocessor.
+    string(REPLACE "." "," NODETALK_VERSION_RC "${PROJECT_VERSION}")
+    set(NODETALK_VERSION_RC "${NODETALK_VERSION_RC},0")
+    set_source_files_properties(packaging/windows/nodetalk.rc PROPERTIES
+        COMPILE_DEFINITIONS
+            "NODETALK_VERSION_RC=${NODETALK_VERSION_RC};NODETALK_VERSION_STR=\"${PROJECT_VERSION}\"")
+    target_sources(nodetalk PRIVATE packaging/windows/nodetalk.rc)
+endif()
+if(APPLE)
+    set(NODETALK_MACOS_ICON "${CMAKE_SOURCE_DIR}/packaging/macos/nodetalk.icns")
+    target_sources(nodetalk PRIVATE "${NODETALK_MACOS_ICON}")
+    set_source_files_properties("${NODETALK_MACOS_ICON}" PROPERTIES
+        MACOSX_PACKAGE_LOCATION "Resources")
+endif()
 target_link_libraries(nodetalk PRIVATE
     nodetalk_core
     nodetalk_ui
@@ -205,6 +225,7 @@ if(APPLE)
         MACOSX_BUNDLE_GUI_IDENTIFIER "org.nodetalk.NodeTalk"
         MACOSX_BUNDLE_BUNDLE_VERSION "${PROJECT_VERSION}"
         MACOSX_BUNDLE_SHORT_VERSION_STRING "${PROJECT_VERSION}"
+        MACOSX_BUNDLE_ICON_FILE "nodetalk.icns"
         MACOSX_BUNDLE_INFO_PLIST "${CMAKE_SOURCE_DIR}/packaging/macos/Info.plist.in"
     )
 endif()
@@ -224,6 +245,11 @@ if(UNIX AND NOT APPLE)
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/applications)
     install(FILES resources/icons/nodetalk.svg
         DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/scalable/apps)
+    foreach(_sz 16 24 32 48 64 128 256 512)
+        install(FILES "resources/icons/png/nodetalk-${_sz}.png"
+            DESTINATION "${CMAKE_INSTALL_DATAROOTDIR}/icons/hicolor/${_sz}x${_sz}/apps"
+            RENAME "nodetalk.png")
+    endforeach()
 endif()
 
 include(cmake/Packaging.cmake)

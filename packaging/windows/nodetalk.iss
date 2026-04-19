@@ -18,6 +18,7 @@ DefaultDirName={autopf}\NodeTalk
 DefaultGroupName=NodeTalk
 DisableProgramGroupPage=yes
 OutputBaseFilename=NodeTalk-{#AppVersion}-Setup
+SetupIconFile=nodetalk.ico
 Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
@@ -31,10 +32,11 @@ Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
 
 [Files]
 Source: "{#SourceDir}\*"; DestDir: "{app}"; Flags: recursesubdirs createallsubdirs ignoreversion
+Source: "nodetalk.ico"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
-Name: "{group}\NodeTalk"; Filename: "{app}\NodeTalk.exe"
-Name: "{commondesktop}\NodeTalk"; Filename: "{app}\NodeTalk.exe"; Tasks: desktopicon
+Name: "{group}\NodeTalk"; Filename: "{app}\NodeTalk.exe"; IconFilename: "{app}\nodetalk.ico"
+Name: "{commondesktop}\NodeTalk"; Filename: "{app}\NodeTalk.exe"; IconFilename: "{app}\nodetalk.ico"; Tasks: desktopicon
 
 [Tasks]
 Name: "desktopicon"; Description: "Create a desktop shortcut"; GroupDescription: "Additional icons:"
