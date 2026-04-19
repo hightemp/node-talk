@@ -4,15 +4,18 @@
 
 #include <QListWidget>
 
+class QResizeEvent;
+
 namespace nodetalk { class Database; }
 namespace nodetalk::net { class PeerManager; class FileTransferManager; }
 
 namespace nodetalk::ui {
 
 /// Scrollable conversation view for one peer.
-/// History is paged from `MessageRepository`. Each item is rendered by
-/// the default delegate but with right/left alignment and bubble look
-/// achieved through item flags + alternating background.
+/// Each row is a real `QLabel` widget hosted inside a `QListWidgetItem`,
+/// so users can select arbitrary text/words inside a message and copy
+/// it with the standard shortcut. URLs are auto-linkified and open in
+/// the system browser.
 class ChatView : public QListWidget {
     Q_OBJECT
 public:
@@ -30,13 +33,8 @@ public slots:
     void onMessageAppended(const Message& m);
     void onMessageStatusChanged(const QString& msgId, MessageStatus s);
 
-private slots:
-    void onContextMenu(const QPoint& pos);
-    void copySelectionPlain();
-    void copySelectionFull();
-
 protected:
-    void keyPressEvent(QKeyEvent* e) override;
+    void resizeEvent(QResizeEvent* e) override;
 
 private:
     void appendItem(const Message& m);
