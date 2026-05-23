@@ -8,4 +8,15 @@
         <translation>NodeTalk</translation>
     </message>
 </context>
+<context>
+    <name>nodetalk::ui::ChatView</name>
+    <message>
+        <source>Copy selected text</source>
+        <translation>Copy selected text</translation>
+    </message>
+    <message>
+        <source>Copy whole message</source>
+        <translation>Copy whole message</translation>
+    </message>
+</context>
 </TS>

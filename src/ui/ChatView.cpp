@@ -6,11 +6,13 @@
 #include "net/PeerManager.h"
 
 #include <QApplication>
+#include <QClipboard>
 #include <QDateTime>
 #include <QFontMetrics>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QListWidgetItem>
+#include <QMenu>
 #include <QPalette>
 #include <QRegularExpression>
 #include <QResizeEvent>
@@ -164,7 +166,24 @@ void ChatView::appendItem(const Message& m)
                                    | Qt::LinksAccessibleByMouse
                                    | Qt::LinksAccessibleByKeyboard);
     label->setOpenExternalLinks(true);
-    label->setContextMenuPolicy(Qt::DefaultContextMenu);
+    label->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(label, &QLabel::customContextMenuRequested, label,
+            [this, label, body = m.body](const QPoint& pos) {
+                QMenu menu(label);
+                QAction* copySelection = menu.addAction(tr("Copy selected text"));
+                copySelection->setEnabled(label->hasSelectedText());
+                QAction* copyMessage = menu.addAction(tr("Copy whole message"));
+
+                QAction* chosen = menu.exec(label->mapToGlobal(pos));
+                if (!chosen) return;
+
+                QClipboard* clipboard = QApplication::clipboard();
+                if (chosen == copySelection) {
+                    clipboard->setText(label->selectedText());
+                } else if (chosen == copyMessage) {
+                    clipboard->setText(body);
+                }
+            });
     label->setMargin(8);
     label->setStyleSheet(QStringLiteral(
         "QLabel { background:%1; border-radius:8px; color:%2; }"

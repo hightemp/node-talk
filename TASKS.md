@@ -414,3 +414,6 @@ themeable, accessible messenger experience.
 
 ## Maintenance
 
+- [x] **T-301 Chat copy whole message action** — Add a context menu
+  action in chat message bubbles that copies the full message body,
+  independent of the current text selection.
