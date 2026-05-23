@@ -13,7 +13,6 @@ install_manifest.txt
 Testing/
 CTestTestfile.cmake
 DartConfiguration.tcl
-Makefile
 
 # Generated
 *.qm

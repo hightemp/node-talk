@@ -55,12 +55,6 @@ platform are in [docs/BUILD.md](docs/BUILD.md).
 | [docs/RELEASE.md](docs/RELEASE.md) | Tagging and publishing releases |
 | [docs/TESTING.md](docs/TESTING.md) | Test strategy and how to run them |
 
-## Roadmap
-
-See [TASKS.md](TASKS.md). Milestones M1 (MVP) and M2 (release
-pipeline) are complete; M3 (UI polish) is in progress — see the
-`Milestone M3 — UI Polish` checklist for individual tasks.
-
 ## Releases
 
 Tag a commit with `vX.Y.Z` and the GitHub Release workflow will build
