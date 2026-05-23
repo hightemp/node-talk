@@ -5,70 +5,131 @@ on:
     tags:
       - 'v*'
 
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  QT_VERSION: '6.7.2'
+
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   linux:
-    runs-on: ubuntu-latest
+    name: Build Linux x86_64
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.2'
+          fetch-depth: 0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
           host: linux
           target: desktop
           arch: linux_gcc_64
           cache: true
-      - name: Install build deps
+
+      - name: Install build and packaging deps
         run: |
           sudo apt-get update
-          sudo apt-get install -y libgl1-mesa-dev libxkbcommon-x11-0 \
-            libxcb-cursor0 file fuse libfuse2 wget
+          sudo apt-get install -y \
+            file \
+            fuse \
+            libfuse2 \
+            libgl1-mesa-dev \
+            libxkbcommon-x11-0 \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-sync1 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            wget
           wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
           wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
           chmod +x linuxdeploy-*.AppImage
           sudo mv linuxdeploy-x86_64.AppImage /usr/local/bin/linuxdeploy
           sudo mv linuxdeploy-plugin-qt-x86_64.AppImage /usr/local/bin/linuxdeploy-plugin-qt
+
       - name: Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
           cmake --build build --parallel
-      - name: Package tar.gz + deb
+
+      - name: Build native packages
         working-directory: build
         run: cpack -G "TGZ;DEB"
-      - name: AppImage
+
+      - name: Build dependency-bundled AppDir and AppImage
         env:
           VERSION: ${{ github.ref_name }}
+          APPIMAGE_EXTRACT_AND_RUN: 1
         run: bash packaging/linux/AppImage.sh
-      - uses: softprops/action-gh-release@v2
+
+      - name: Verify Linux runtime bundle
+        run: |
+          test -x build/AppDir/AppRun
+          test -x build/AppDir/usr/bin/NodeTalk
+          find build/AppDir/usr -name 'libQt6Core.so*' -print -quit | grep .
+          find build/AppDir/usr -name 'libqxcb.so' -print -quit | grep .
+          find build/AppDir/usr -name 'libqsqlite.so' -print -quit | grep .
+
+      - name: Collect Linux artifacts
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p dist
+
+          appimage="$(find . -maxdepth 1 -type f -name 'NodeTalk-*-x86_64.AppImage' -print -quit)"
+          deb="$(find build -maxdepth 1 -type f -name '*.deb' -print -quit)"
+
+          test -n "$appimage"
+          test -n "$deb"
+
+          cp "$appimage" "dist/NodeTalk-${tag}-linux-x86_64.AppImage"
+          cp "$deb" "dist/NodeTalk-${tag}-linux-x86_64.deb"
+          tar -C build/AppDir -czf "dist/NodeTalk-${tag}-linux-x86_64-runtime.tar.gz" .
+
+      - name: Upload Linux artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            build/NodeTalk-*.tar.gz
-            build/NodeTalk-*.deb
-            NodeTalk-*-x86_64.AppImage
-          generate_release_notes: true
+          name: nodetalk-${{ github.ref_name }}-linux-x86_64
+          path: dist/*
+          if-no-files-found: error
 
   windows:
-    runs-on: windows-latest
+    name: Build Windows x86_64
+    runs-on: windows-2022
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.2'
+          fetch-depth: 0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
           host: windows
           target: desktop
           arch: win64_msvc2019_64
           cache: true
-      - name: Build
+
+      - name: Build and deploy Qt runtime
         shell: pwsh
         run: |
-          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
+          cmake -S . -B build -G "Visual Studio 17 2022" -A x64 -DNODETALK_BUILD_TESTS=OFF
           cmake --build build --config Release --parallel
           cmake --install build --prefix build/install --config Release
           windeployqt --release --no-translations --compiler-runtime build/install/bin/NodeTalk.exe
+
       - name: Bundle MSVC runtime DLLs
         shell: pwsh
         run: |
@@ -87,13 +148,25 @@ jobs:
           if (-not $crtDir) { throw "MSVC x64 CRT redist directory not found" }
           Write-Host "Using CRT redist: $($crtDir.FullName)"
           Copy-Item (Join-Path $crtDir.FullName '*.dll') build/install/bin/ -Force
-          Get-ChildItem build/install/bin/ -Filter '*.dll' |
-            Where-Object { $_.Name -like 'vcruntime*' -or $_.Name -like 'msvcp*' -or $_.Name -like 'concrt*' } |
-            Select-Object Name
-      - name: Zip
+
+      - name: Verify Windows runtime bundle
         shell: pwsh
-        run: Compress-Archive -Path build/install/bin/* -DestinationPath NodeTalk-${{ github.ref_name }}-win64.zip
-      - name: Installer
+        run: |
+          $required = @(
+            "build/install/bin/NodeTalk.exe",
+            "build/install/bin/Qt6Core.dll",
+            "build/install/bin/Qt6Gui.dll",
+            "build/install/bin/Qt6Widgets.dll",
+            "build/install/bin/platforms/qwindows.dll",
+            "build/install/bin/sqldrivers/qsqlite.dll"
+          )
+          foreach ($path in $required) {
+            if (-not (Test-Path $path)) { throw "Missing deployed dependency: $path" }
+          }
+          $crt = Get-ChildItem build/install/bin -Filter 'vcruntime*.dll' -ErrorAction SilentlyContinue
+          if (-not $crt) { throw "Missing MSVC runtime DLLs" }
+
+      - name: Build installer
         shell: pwsh
         run: |
           choco install innosetup --no-progress -y
@@ -102,38 +175,145 @@ jobs:
           $out = Join-Path $PWD 'installer-out'
           New-Item -ItemType Directory -Force -Path $out | Out-Null
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" /DAppVersion=$version /DSourceDir=$src /O$out packaging\windows\nodetalk.iss
-          Move-Item (Join-Path $out '*.exe') "NodeTalk-${{ github.ref_name }}-Setup.exe"
-      - uses: softprops/action-gh-release@v2
+          Move-Item (Join-Path $out '*.exe') "NodeTalk-${{ github.ref_name }}-windows-x86_64-setup.exe"
+
+      - name: Collect Windows artifacts
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path build/install/bin/* -DestinationPath "dist/NodeTalk-${{ github.ref_name }}-windows-x86_64-portable.zip"
+          Move-Item "NodeTalk-${{ github.ref_name }}-windows-x86_64-setup.exe" dist/
+
+      - name: Upload Windows artifacts
+        uses: actions/upload-artifact@v4
         with:
-          files: |
-            NodeTalk-*-win64.zip
-            NodeTalk-*-Setup.exe
-          generate_release_notes: true
+          name: nodetalk-${{ github.ref_name }}-windows-x86_64
+          path: dist/*
+          if-no-files-found: error
 
   macos:
-    runs-on: macos-latest
+    name: Build macOS x86_64
+    runs-on: macos-15-intel
     steps:
       - uses: actions/checkout@v4
-        with: { fetch-depth: 0 }
-      - uses: jurplel/install-qt-action@v4
         with:
-          version: '6.7.2'
+          fetch-depth: 0
+
+      - name: Install Qt
+        uses: jurplel/install-qt-action@v4
+        with:
+          version: ${{ env.QT_VERSION }}
           host: mac
           target: desktop
           arch: clang_64
           cache: true
+
       - name: Build
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DNODETALK_BUILD_TESTS=OFF
           cmake --build build --parallel
-          macdeployqt build/NodeTalk.app -dmg
-      - name: Zip .app
+
+      - name: Deploy Qt runtime
+        run: macdeployqt build/NodeTalk.app -dmg
+
+      - name: Verify macOS runtime bundle
         run: |
-          ditto -c -k --keepParent build/NodeTalk.app NodeTalk-${{ github.ref_name }}-macos.zip
-          mv build/NodeTalk.dmg NodeTalk-${{ github.ref_name }}.dmg
-      - uses: softprops/action-gh-release@v2
+          test -d build/NodeTalk.app/Contents/Frameworks/QtCore.framework
+          find build/NodeTalk.app/Contents/PlugIns -name 'libqcocoa.dylib' -print -quit | grep .
+          find build/NodeTalk.app/Contents/PlugIns -name 'libqsqlite.dylib' -print -quit | grep .
+
+      - name: Collect macOS artifacts
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          mkdir -p dist
+          ditto -c -k --sequesterRsrc --keepParent build/NodeTalk.app "dist/NodeTalk-${tag}-macos-x86_64.app.zip"
+          cp build/NodeTalk.dmg "dist/NodeTalk-${tag}-macos-x86_64.dmg"
+
+      - name: Upload macOS artifacts
+        uses: actions/upload-artifact@v4
         with:
+          name: nodetalk-${{ github.ref_name }}-macos-x86_64
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    name: Publish GitHub Release
+    runs-on: ubuntu-24.04
+    needs:
+      - linux
+      - windows
+      - macos
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download release artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/downloaded
+
+      - name: Prepare release files
+        run: |
+          set -euo pipefail
+          mkdir -p dist/release
+          find dist/downloaded -type f -exec cp {} dist/release/ \;
+          cd dist/release
+          sha256sum NodeTalk-* > SHA256SUMS.txt
+
+      - name: Write release manifest
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          cat > dist/release/RELEASE-MANIFEST.md <<EOF
+          # NodeTalk ${tag} release artifacts
+
+          | Artifact | Target | Architecture | Dependency model |
+          | --- | --- | --- | --- |
+          | \`NodeTalk-${tag}-linux-x86_64.AppImage\` | Linux | x86_64 | Self-contained AppImage with Qt/runtime libraries bundled. |
+          | \`NodeTalk-${tag}-linux-x86_64-runtime.tar.gz\` | Linux | x86_64 | Tarred AppDir with deployed runtime dependencies; run \`./AppRun\` after unpacking. |
+          | \`NodeTalk-${tag}-linux-x86_64.deb\` | Debian/Ubuntu Linux | amd64/x86_64 | Native DEB package; shared library dependencies are declared in package metadata. |
+          | \`NodeTalk-${tag}-windows-x86_64-portable.zip\` | Windows | x86_64 | Portable folder with Qt plugins and MSVC runtime DLLs bundled. |
+          | \`NodeTalk-${tag}-windows-x86_64-setup.exe\` | Windows | x86_64 | Inno Setup installer built from the same deployed runtime folder. |
+          | \`NodeTalk-${tag}-macos-x86_64.app.zip\` | macOS | Intel x86_64 | Zipped .app bundle after \`macdeployqt\`. |
+          | \`NodeTalk-${tag}-macos-x86_64.dmg\` | macOS | Intel x86_64 | DMG containing the deployed .app bundle. |
+          | \`SHA256SUMS.txt\` | All | All | SHA-256 checksums for release artifacts. |
+          EOF
+          sed -i 's/^          //' dist/release/RELEASE-MANIFEST.md
+
+      - name: Write release notes
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          current_commit="$(git rev-list -n 1 "$tag")"
+          previous_tag="$(git describe --tags --abbrev=0 --match 'v*' "${current_commit}^" 2>/dev/null || true)"
+
+          {
+            echo "# NodeTalk ${tag}"
+            echo
+            cat dist/release/RELEASE-MANIFEST.md
+            echo
+            echo "## Changes"
+            echo
+            if [[ -n "$previous_tag" ]]; then
+              echo "Changes since ${previous_tag}:"
+              echo
+              git log --no-merges --pretty=format:'- %s (%h)' "${previous_tag}..${current_commit}"
+            else
+              git log --no-merges --pretty=format:'- %s (%h)' "$current_commit"
+            fi
+            echo
+          } > dist/release-notes.md
+
+      - name: Publish release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: dist/release-notes.md
+          fail_on_unmatched_files: true
           files: |
-            NodeTalk-*-macos.zip
-            NodeTalk-*.dmg
-          generate_release_notes: true
+            dist/release/NodeTalk-*
+            dist/release/RELEASE-MANIFEST.md
+            dist/release/SHA256SUMS.txt

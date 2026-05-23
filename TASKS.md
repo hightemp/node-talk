@@ -311,11 +311,17 @@ Goal: full feature set per PRD, polished UX, packaging, CI/CD.
 
 ### T-117 GitHub Actions: Release workflow
 - D: T-113, T-114, T-115, T-116
+- Status: done
 - AC:
   - `.github/workflows/release.yml` triggers on tags `v*`.
-  - Builds release artifacts on all three OSes.
+  - Builds release artifacts on all three OSes with OS/architecture in
+    artifact names.
+  - Windows/macOS runtime bundles include deployed Qt and compiler
+    runtime dependencies; Linux publishes AppImage/AppDir runtime
+    bundles and a native `.deb`.
   - Generates release notes from `git log <prev-tag>..<this-tag>`.
-  - Uploads artifacts to the GitHub Release.
+  - Uploads artifacts, release manifest and SHA-256 checksums to the
+    GitHub Release.
 - M: M2
 
 ### T-118 Tests: integration & protocol

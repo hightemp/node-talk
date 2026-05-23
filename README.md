@@ -60,9 +60,14 @@ platform are in [docs/BUILD.md](docs/BUILD.md).
 Tag a commit with `vX.Y.Z` and the GitHub Release workflow will build
 and upload:
 
-* Linux: `.AppImage`, `.tar.gz`, `.deb`
-* Windows: portable `.zip` + Inno Setup `.exe` installer
-* macOS: zipped `.app` bundle + `.dmg`
+* Linux x86_64: `.AppImage`, dependency-bundled runtime `.tar.gz`,
+  native `.deb`
+* Windows x86_64: portable `.zip` + Inno Setup `.exe` installer, both
+  with Qt/MSVC runtime files bundled
+* macOS Intel x86_64: zipped `.app` bundle + `.dmg`, both produced after
+  `macdeployqt`
+
+Each release also includes `RELEASE-MANIFEST.md` and `SHA256SUMS.txt`.
 
 Latest builds are on the
 [Releases page](https://github.com/hightemp/node-talk/releases).
