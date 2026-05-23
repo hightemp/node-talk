@@ -411,3 +411,6 @@ themeable, accessible messenger experience.
   are wrapped in `tr()`; `resources/i18n/nodetalk_ru.ts` updated via
   `lupdate` and fully translated; runtime language switch still
   works.
+
+## Maintenance
+

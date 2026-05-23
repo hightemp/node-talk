@@ -3,6 +3,7 @@
 [![CI](https://github.com/hightemp/node-talk/actions/workflows/ci.yml/badge.svg)](https://github.com/hightemp/node-talk/actions/workflows/ci.yml)
 [![Release](https://github.com/hightemp/node-talk/actions/workflows/release.yml/badge.svg)](https://github.com/hightemp/node-talk/actions/workflows/release.yml)
 [![Latest release](https://img.shields.io/github/v/release/hightemp/node-talk?sort=semver)](https://github.com/hightemp/node-talk/releases/latest)
+[![Downloads](https://img.shields.io/github/downloads/hightemp/node-talk/total?label=downloads)](https://github.com/hightemp/node-talk/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Qt 6](https://img.shields.io/badge/Qt-6.4%2B-41cd52?logo=qt&logoColor=white)](https://www.qt.io/)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg?logo=c%2B%2B&logoColor=white)](https://en.cppreference.com/w/cpp/17)
